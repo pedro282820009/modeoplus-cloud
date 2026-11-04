@@ -1,0 +1,44 @@
+name: ModeoPlus Cloud Catalog & Drive Sync
+
+on:
+  schedule:
+    - cron: '0 */32 * * *' # Ejecución automática cada 32 horas
+  workflow_dispatch:        # Botón manual para ejecutar cuando quieras
+
+permissions:
+  contents: write
+
+jobs:
+  sync-catalog-and-drive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Cloud Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 google-api-python-client google-auth urllib3
+
+      - name: Run In-Memory Scraper to Google Drive
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GDRIVE_TORRENTS_FOLDER_ID: ${{ secrets.GDRIVE_TORRENTS_FOLDER_ID }}
+        run: |
+          python cloud_catalog_builder.py
+
+      - name: Commit & Push Updated .MDX and Drive Index
+        run: |
+          git config --global user.name "ModeoPlus Cloud Bot"
+          git config --global user.email "cloud@modeoplus.app"
+          git pull --rebase origin main || true
+          git add modeoplus_catalog.mdx drive_torrents_index.json
+          git commit -m "Cloud Auto-Sync .MDX & Google Drive Vault [skip ci]" || exit 0
+          git push
