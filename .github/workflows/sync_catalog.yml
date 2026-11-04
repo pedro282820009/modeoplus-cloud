@@ -2,8 +2,8 @@ name: ModeoPlus Cloud Catalog & Drive Sync
 
 on:
   schedule:
-    - cron: '0 */32 * * *' # Ejecución automática cada 32 horas
-  workflow_dispatch:        # Botón manual para ejecutar cuando quieras
+    - cron: '0 */32 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
