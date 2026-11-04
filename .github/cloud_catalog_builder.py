@@ -7,9 +7,8 @@ import random
 import hashlib
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from urllib.parse import urljoin, quote, urlparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from bs4 import BeautifulSoup
@@ -37,8 +36,7 @@ THREAD_LOCAL = threading.local()
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
 ]
 
 PUBLIC_FAST_TRACKERS = [
@@ -46,18 +44,12 @@ PUBLIC_FAST_TRACKERS = [
     "udp://open.stealth.si:80/announce",
     "udp://tracker.torrent.eu.org:451/announce",
     "udp://exodus.desync.com:6969/announce",
-    "udp://tracker.openbittorrent.com:6969/announce",
-    "http://tracker.openbittorrent.com:80/announce"
+    "udp://tracker.openbittorrent.com:6969/announce"
 ]
 
 def create_resilient_session() -> requests.Session:
     s = requests.Session()
-    retries = Retry(
-        total=3,
-        backoff_factor=0.6,
-        status_forcelist=[429, 500, 502, 503, 504],
-        raise_on_status=False
-    )
+    retries = Retry(total=3, backoff_factor=0.6, status_forcelist=[429, 500, 502, 503, 504], raise_on_status=False)
     adapter = HTTPAdapter(max_retries=retries, pool_connections=16, pool_maxsize=16)
     s.mount("http://", adapter)
     s.mount("https://", adapter)
@@ -69,8 +61,7 @@ def get_headers(referer: Optional[str] = None, is_json: bool = False) -> dict:
     h = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "*/*" if is_json else "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9",
-        "Connection": "keep-alive"
+        "Accept-Language": "es-ES,es;q=0.9"
     }
     if referer:
         h["Referer"] = referer
@@ -81,10 +72,6 @@ def get_headers(referer: Optional[str] = None, is_json: bool = False) -> dict:
     return h
 
 def get_thread_gdrive_service():
-    """
-    Crea una instancia thread-safe del cliente de Google Drive por cada hilo de trabajo
-    para máxima velocidad y seguridad.
-    """
     if not HAS_GOOGLE_API or not GDRIVE_SA_JSON:
         return None
     if not hasattr(THREAD_LOCAL, "drive_service"):
@@ -100,29 +87,13 @@ def get_thread_gdrive_service():
     return THREAD_LOCAL.drive_service
 
 def upload_torrent_bytes_directly_to_drive(raw_bytes: bytes, file_name: str) -> Optional[str]:
-    """
-    Sube el archivo .torrent desde la memoria RAM (BytesIO) directamente a la carpeta
-    configurada en Google Drive. Como la carpeta padre ya es pública (lectura),
-    el archivo hereda automáticamente el permiso de descarga directa sin gastar llamadas extra.
-    """
     service = get_thread_gdrive_service()
     if service is None or not GDRIVE_FOLDER_ID:
         return None
     try:
-        metadata = {
-            "name": file_name,
-            "parents": [GDRIVE_FOLDER_ID]
-        }
-        media = MediaIoBaseUpload(
-            io.BytesIO(raw_bytes),
-            mimetype="application/x-bittorrent",
-            resumable=False
-        )
-        created = service.files().create(
-            body=metadata,
-            media_body=media,
-            fields="id"
-        ).execute()
+        metadata = {"name": file_name, "parents": [GDRIVE_FOLDER_ID]}
+        media = MediaIoBaseUpload(io.BytesIO(raw_bytes), mimetype="application/x-bittorrent", resumable=False)
+        created = service.files().create(body=metadata, media_body=media, fields="id").execute()
         file_id = created.get("id")
         if file_id:
             return f"https://drive.google.com/uc?export=download&id={file_id}"
@@ -130,26 +101,18 @@ def upload_torrent_bytes_directly_to_drive(raw_bytes: bytes, file_name: str) -> 
         print(f"[GDRIVE-UPLOAD-WARN] {file_name}: {e}")
     return None
 
-# =========================================================================
-# DECODIFICADOR BENCODE EN MEMORIA PARA EXTRAER EL SHA-1 INFO_HASH EXACTO
-# =========================================================================
 def _bencode_find_info_slice(data: bytes) -> Optional[bytes]:
-    """
-    Localiza con precisión matemática el inicio y fin del diccionario '4:info'
-    dentro de los bytes de un archivo .torrent para calcular su SHA-1 real.
-    """
     marker = b"4:infod"
     idx = data.find(marker)
     if idx == -1:
         return None
-    start = idx + 6  # Apunta exactamente a la 'd' de inicio del diccionario info
+    start = idx + 6
 
     def skip_bencode_value(buf: bytes, pos: int) -> int:
         c = buf[pos:pos + 1]
         if c == b"i":
-            end_i = buf.find(b"e", pos + 1)
-            return end_i + 1
-        elif c == b"l" or c == b"d":
+            return buf.find(b"e", pos + 1) + 1
+        elif c in (b"l", b"d"):
             pos += 1
             while pos < len(buf) and buf[pos:pos + 1] != b"e":
                 pos = skip_bencode_value(buf, pos)
@@ -158,8 +121,7 @@ def _bencode_find_info_slice(data: bytes) -> Optional[bytes]:
             colon = buf.find(b":", pos)
             length = int(buf[pos:colon])
             return colon + 1 + length
-        else:
-            raise ValueError("Formato bencode no válido")
+        raise ValueError("Invalid bencode")
 
     try:
         end = skip_bencode_value(data, start)
@@ -211,8 +173,7 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
             )
             if val.status_code != 200:
                 continue
-            vdata = val.json()
-            dl_uri = vdata.get("download_url")
+            dl_uri = val.json().get("download_url")
             if dl_uri:
                 full_t_url = ("https:" + dl_uri) if dl_uri.startswith("//") else urljoin(base_page_url, dl_uri)
                 tr = HTTP_SESSION.get(full_t_url, headers=get_headers(referer=base_page_url), timeout=15)
@@ -222,19 +183,7 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
         pass
     return None
 
-def resolve_cloud_torrent_url(
-    item_id: str,
-    title: str,
-    page_url: str,
-    cid: str,
-    tabla: str,
-    drive_index: Dict[str, dict]
-) -> str:
-    """
-    Si el .torrent ya está en Google Drive, devuelve su URL instantáneamente.
-    Si es nuevo, lo descarga en RAM, extrae su Magnet SHA-1 exacto, sube el .torrent
-    a Google Drive y concatena ambos separados por '||' para redundancia total en la TV.
-    """
+def resolve_cloud_torrent_url(item_id: str, title: str, page_url: str, cid: str, tabla: str, drive_index: Dict[str, dict]) -> str:
     with INDEX_LOCK:
         if item_id in drive_index:
             saved = drive_index[item_id]
@@ -248,13 +197,12 @@ def resolve_cloud_torrent_url(
                 return mag
 
     if cid and cid.isdigit() and int(cid) > 0:
-        time.sleep(random.uniform(0.25, 0.65))
+        time.sleep(random.uniform(0.2, 0.5))
         raw_bytes = fetch_torrent_bytes_in_ram(page_url, cid, tabla)
         if raw_bytes:
             clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', title)[:60] + f"_{item_id}.torrent"
             drive_url = upload_torrent_bytes_directly_to_drive(raw_bytes, clean_name)
             magnet_uri = extract_exact_magnet_from_torrent_bytes(raw_bytes, title)
-
             combined = (
                 f"{drive_url}||{magnet_uri}"
                 if (drive_url and magnet_uri)
@@ -279,17 +227,14 @@ SPANISH_M3U_SOURCES = [
     "https://iptv-org.github.io/iptv/countries/mx.m3u",
     "https://iptv-org.github.io/iptv/countries/es.m3u",
     "https://iptv-org.github.io/iptv/countries/ar.m3u",
-    "https://iptv-org.github.io/iptv/countries/co.m3u",
-    "https://iptv-org.github.io/iptv/countries/pe.m3u",
-    "https://iptv-org.github.io/iptv/countries/cl.m3u"
+    "https://iptv-org.github.io/iptv/countries/co.m3u"
 ]
 
 DONTORRENT_DOMAINS = [
     "https://dontorrent.diy",
     "https://dontorrent.channel",
     "https://dontorrent.li",
-    "https://dontorrent.dad",
-    "https://dontorrent.org"
+    "https://dontorrent.dad"
 ]
 
 def scrape_channels() -> List[dict]:
@@ -326,7 +271,7 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     with INDEX_LOCK:
         DRIVE_INDEX_FILE.write_text(json.dumps(drive_index, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    lines = [f"HEAD|v16.5-PRIME-CLOUD|{int(time.time())}"]
+    lines = [f"HEAD|v17.0-PRIME-CLOUD|{int(time.time())}"]
     for i, ch in enumerate(channels, start=1):
         lines.append(f"LIVE|live_{i}|{ch['name']}|{ch['category']}|{ch['language']}|1080p HD|{ch['poster']}|Señal en Vivo|{ch['url']}")
     for m in movies_map.values():
@@ -351,7 +296,6 @@ def build_cloud_mdx():
     movies_map: Dict[str, dict] = {}
     series_map: Dict[str, dict] = {}
 
-    # Cargar catálogo previo para no perder ni una sola película/serie acumulada
     if CATALOG_FILE.exists():
         try:
             for line in CATALOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -380,7 +324,6 @@ def build_cloud_mdx():
             if r.status_code == 200:
                 pu = urlparse(r.url)
                 working_domain = f"{pu.scheme}://{pu.netloc}"
-                print(f"[DOMINIO-ACTIVO] {working_domain}")
                 break
         except Exception:
             continue
@@ -391,7 +334,7 @@ def build_cloud_mdx():
         for sec in sections:
             page_urls.append(urljoin(working_domain, sec))
             if sec != "/ultimos":
-                for pnum in range(2, 10):
+                for pnum in range(2, 8):
                     page_urls.append(urljoin(working_domain, f"{sec}/page/{pnum}"))
 
         candidates = []
@@ -441,8 +384,6 @@ def build_cloud_mdx():
                     candidates.append((kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u))
             except Exception:
                 continue
-
-        print(f"[CLOUD-HARVEST] Procesando {len(candidates)} fichas hacia Google Drive Vault...")
 
         processed_counter = 0
         for kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u in candidates:
@@ -505,10 +446,8 @@ def build_cloud_mdx():
             processed_counter += 1
             if processed_counter % 25 == 0:
                 save_checkpoint(drive_index, channels, movies_map, series_map)
-                print(f"[CHECKPOINT] {processed_counter}/{len(candidates)} sincronizados en Drive...")
 
     save_checkpoint(drive_index, channels, movies_map, series_map)
-    print(f"[CLOUD-MDX-SUCCESS] Catálogo listo: {len(channels)} Canales | {len(movies_map)} Películas | {len(series_map)} Series.")
 
 if __name__ == "__main__":
     build_cloud_mdx()
