@@ -19,6 +19,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          # Al no pasarle parámetros de caché de archivos de texto, evitamos que falle si el archivo está vacío
 
       - name: Instalar dependencias Cloud
         run: |
