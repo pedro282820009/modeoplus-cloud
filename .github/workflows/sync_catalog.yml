@@ -1,44 +1,41 @@
-name: ModeoPlus Cloud Catalog & Drive Sync
+name: ModeoPlus Cloud Catalog Sync
 
 on:
   schedule:
-    - cron: '0 */32 * * *'
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  sync-catalog-and-drive:
+  build-catalog:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
     steps:
-      - name: Checkout Repository
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
-      - name: Setup Python 3.10
+      - name: Configurar Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
 
-      - name: Install Cloud Dependencies
+      - name: Instalar dependencias Cloud
         run: |
-          pip install --upgrade pip
-          pip install requests beautifulsoup4 google-api-python-client google-auth urllib3
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 google-api-python-client google-auth
 
-      - name: Run In-Memory Scraper to Google Drive
+      - name: Ejecutar constructor de catálogo y sincronización con Drive
         env:
-          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
           GDRIVE_TORRENTS_FOLDER_ID: ${{ secrets.GDRIVE_TORRENTS_FOLDER_ID }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
         run: |
           python cloud_catalog_builder.py
 
-      - name: Commit & Push Updated .MDX and Drive Index
+      - name: Guardar modeoplus_catalog.mdx actualizado en GitHub
         run: |
-          git config --global user.name "ModeoPlus Cloud Bot"
-          git config --global user.email "cloud@modeoplus.app"
-          git pull --rebase origin main || true
+          git config user.name "modeoplus-bot"
+          git config user.email "bot@modeoplus.cloud"
           git add modeoplus_catalog.mdx drive_torrents_index.json
-          git commit -m "Cloud Auto-Sync .MDX & Google Drive Vault [skip ci]" || exit 0
+          git diff --staged --quiet || git commit -m "Auto-sync catálogo Modeo+ Cloud"
           git push
