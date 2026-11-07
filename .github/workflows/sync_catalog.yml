@@ -1,70 +1,41 @@
-name: ModeoPlus Cloud Vault & Shards Sync
+name: sync-catalog-and-drive
 
 on:
   schedule:
     - cron: "0 */6 * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "sync_catalog.py"
-      - ".github/workflows/sync_catalog.yml"
 
 permissions:
   contents: write
 
-concurrency:
-  group: modeoplus-catalog-sync
-  cancel-in-progress: false
-
 jobs:
-  build-and-sync-vault:
+  build-catalog:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
+    timeout-minutes: 35
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
-      - name: Setup Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Install Python Dependencies
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 urllib3
+          python3 -m pip install --upgrade pip --break-system-packages || true
+          python3 -m pip install requests beautifulsoup4 urllib3 --break-system-packages || pip install requests beautifulsoup4 urllib3
 
-      - name: Run Multi-Threaded Catalog & Shards Builder
+      - name: Run Cloud Catalog Builder (Full Scan + GitHub Vault)
         env:
           GITHUB_REPO_FULL: ${{ github.repository }}
-          MAX_PAGES_PER_SECTION: "35"
-          MAX_WORKERS: "20"
-          MIN_SHARDS_COUNT: "24"
+          MAX_PAGES_PER_CATEGORY: "35"
+          MAX_NEW_POW_PER_RUN: "450"
         run: |
-          python sync_catalog.py
-
-      - name: Commit & Push Updated Vault, Shards (>16 files) and MDX Catalog
-        run: |
-          git config --global user.name "ModeoPlus Cloud Bot"
-          git config --global user.email "bot@modeoplus.cloud"
-          git config --global http.postBuffer 524288000
-
-          git add -A torrents_vault/
-          git add -A catalog_shards/
-          git add modeoplus_catalog.mdx drive_torrents_index.json
-
-          if git diff --staged --quiet; then
-            echo "No hay cambios nuevos para subir."
-          else
-            TOTAL_TORRENTS=$(ls -1 torrents_vault/*.torrent 2>/dev/null | wc -l || echo 0)
-            TOTAL_SHARDS=$(ls -1 catalog_shards/*.json 2>/dev/null | wc -l || echo 0)
-            git commit -m "chore(cloud): sync ${TOTAL_TORRENTS} vault torrents & ${TOTAL_SHARDS} shards [skip ci]"
-            git pull --rebase origin main
-            git push origin main
+          if [ -f ".github/cloud_catalog_builder.py" ] && [ ! -f "cloud_catalog_builder.py" ]; then
+            mv -f .github/cloud_catalog_builder.py cloud_catalog_builder.py
           fi
+          python3 -u cloud_catalog_builder.py
+
+      - name: Commit and Push Updated MDX and Torrents Vault
+        run: |
+          git config user.name "modeoplus-bot"
+          git config user.email "bot@modeoplus.cloud"
+          git add -A
+          git diff --staged --quiet || git commit -m "Auto-sync catalogo masivo Modeo+ y torrents_vault"
+          git push
