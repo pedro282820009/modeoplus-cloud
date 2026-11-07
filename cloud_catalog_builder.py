@@ -1,5 +1,4 @@
 import os
-import io
 import re
 import json
 import time
@@ -15,24 +14,16 @@ from bs4 import BeautifulSoup
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 
-try:
-    from google.oauth2 import service_account
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaIoBaseUpload
-    HAS_GOOGLE_API = True
-except ImportError:
-    HAS_GOOGLE_API = False
-
 BASE_DIR = Path(__file__).resolve().parent
 CATALOG_FILE = BASE_DIR / "modeoplus_catalog.mdx"
 CATALOG_TMP_FILE = BASE_DIR / "modeoplus_catalog.mdx.tmp"
 DRIVE_INDEX_FILE = BASE_DIR / "drive_torrents_index.json"
+TORRENTS_VAULT_DIR = BASE_DIR / "torrents_vault"
+TORRENTS_VAULT_DIR.mkdir(parents=True, exist_ok=True)
 
-GDRIVE_FOLDER_ID = os.environ.get("GDRIVE_TORRENTS_FOLDER_ID", "").strip()
-GDRIVE_SA_JSON = os.environ.get("GDRIVE_SERVICE_ACCOUNT_JSON", "").strip()
+GITHUB_REPO_FULL = os.environ.get("GITHUB_REPO_FULL", "pedro282820009/modeoplus-cloud").strip()
 
 INDEX_LOCK = threading.Lock()
-THREAD_LOCAL = threading.local()
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -44,8 +35,12 @@ PUBLIC_FAST_TRACKERS = [
     "udp://open.stealth.si:80/announce",
     "udp://tracker.torrent.eu.org:451/announce",
     "udp://exodus.desync.com:6969/announce",
-    "udp://tracker.openbittorrent.com:6969/announce"
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "http://tracker.opentrackr.org:1337/announce"
 ]
+
+def log(msg: str):
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 def create_resilient_session() -> requests.Session:
     s = requests.Session()
@@ -71,35 +66,15 @@ def get_headers(referer: Optional[str] = None, is_json: bool = False) -> dict:
         h["Content-Type"] = "application/json"
     return h
 
-def get_thread_gdrive_service():
-    if not HAS_GOOGLE_API or not GDRIVE_SA_JSON:
-        return None
-    if not hasattr(THREAD_LOCAL, "drive_service"):
-        try:
-            info = json.loads(GDRIVE_SA_JSON)
-            creds = service_account.Credentials.from_service_account_info(
-                info, scopes=["https://www.googleapis.com/auth/drive"]
-            )
-            THREAD_LOCAL.drive_service = build("drive", "v3", credentials=creds, cache_discovery=False)
-        except Exception as e:
-            print(f"[GDRIVE-AUTH-ERROR] {e}")
-            THREAD_LOCAL.drive_service = None
-    return THREAD_LOCAL.drive_service
-
-def upload_torrent_bytes_directly_to_drive(raw_bytes: bytes, file_name: str) -> Optional[str]:
-    service = get_thread_gdrive_service()
-    if service is None or not GDRIVE_FOLDER_ID:
-        return None
-    try:
-        metadata = {"name": file_name, "parents": [GDRIVE_FOLDER_ID]}
-        media = MediaIoBaseUpload(io.BytesIO(raw_bytes), mimetype="application/x-bittorrent", resumable=False)
-        created = service.files().create(body=metadata, media_body=media, fields="id").execute()
-        file_id = created.get("id")
-        if file_id:
-            return f"https://drive.google.com/uc?export=download&id={file_id}"
-    except Exception as e:
-        print(f"[GDRIVE-UPLOAD-WARN] {file_name}: {e}")
-    return None
+def save_torrent_bytes_to_github_vault(raw_bytes: bytes, item_id: str) -> str:
+    """
+    Guarda el archivo .torrent directamente en torrents_vault/ del repositorio de GitHub
+    y devuelve la URL directa de GitHub Raw (sin límites ni errores de cuota de Google Drive).
+    """
+    filename = f"{item_id}.torrent"
+    vault_path = TORRENTS_VAULT_DIR / filename
+    vault_path.write_bytes(raw_bytes)
+    return f"https://raw.githubusercontent.com/{GITHUB_REPO_FULL}/main/torrents_vault/{filename}"
 
 def _bencode_find_info_slice(data: bytes) -> Optional[bytes]:
     marker = b"4:infod"
@@ -151,13 +126,13 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
     parsed = urlparse(base_page_url)
     api_pow_url = f"{parsed.scheme}://{parsed.netloc}/api_validate_pow.php"
     try:
-        HTTP_SESSION.get(base_page_url, headers=get_headers(), timeout=10)
+        HTTP_SESSION.get(base_page_url, headers=get_headers(), timeout=8)
         for tb in [tabla, "peliculas", "series", "episodios", "documentales"]:
             gen = HTTP_SESSION.post(
                 api_pow_url,
                 json={"action": "generate", "content_id": int(content_id), "tabla": tb},
                 headers=get_headers(referer=base_page_url, is_json=True),
-                timeout=10
+                timeout=8
             )
             if gen.status_code != 200:
                 continue
@@ -169,56 +144,63 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
                 api_pow_url,
                 json={"action": "validate", "challenge": gdata["challenge"], "nonce": nonce},
                 headers=get_headers(referer=base_page_url, is_json=True),
-                timeout=10
+                timeout=8
             )
             if val.status_code != 200:
                 continue
             dl_uri = val.json().get("download_url")
             if dl_uri:
                 full_t_url = ("https:" + dl_uri) if dl_uri.startswith("//") else urljoin(base_page_url, dl_uri)
-                tr = HTTP_SESSION.get(full_t_url, headers=get_headers(referer=base_page_url), timeout=15)
-                if tr.status_code == 200 and len(tr.content) > 50 and not tr.content.lstrip().startswith(b"<"):
+                tr = HTTP_SESSION.get(full_t_url, headers=get_headers(referer=base_page_url), timeout=12)
+                if tr.status_code == 200 and len(tr.content) > 50 and tr.content[0:1] == b"d":
                     return tr.content
     except Exception:
         pass
     return None
 
-def resolve_cloud_torrent_url(item_id: str, title: str, page_url: str, cid: str, tabla: str, drive_index: Dict[str, dict]) -> str:
+def resolve_cloud_torrent_url(item_id: str, title: str, page_url: str, cid: str, tabla: str, drive_index: Dict[str, dict]) -> Optional[str]:
+    vault_file = TORRENTS_VAULT_DIR / f"{item_id}.torrent"
+
     with INDEX_LOCK:
         if item_id in drive_index:
             saved = drive_index[item_id]
-            d_url = saved.get("driveUrl", "")
-            mag = saved.get("magnet", "")
+            d_url = saved.get("driveUrl", "").strip()
+            mag = saved.get("magnet", "").strip()
+            # Si ya tenemos el archivo en torrents_vault/, asegurar que apunte a GitHub Raw
+            if vault_file.exists() and not d_url.startswith("https://raw.githubusercontent.com/"):
+                d_url = f"https://raw.githubusercontent.com/{GITHUB_REPO_FULL}/main/torrents_vault/{item_id}.torrent"
+                saved["driveUrl"] = d_url
             if d_url and mag:
                 return f"{d_url}||{mag}"
-            if d_url:
-                return d_url
-            if mag:
+            if mag and not cid:
                 return mag
 
     if cid and cid.isdigit() and int(cid) > 0:
-        time.sleep(random.uniform(0.2, 0.5))
+        time.sleep(random.uniform(0.15, 0.35))
         raw_bytes = fetch_torrent_bytes_in_ram(page_url, cid, tabla)
         if raw_bytes:
-            clean_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', title)[:60] + f"_{item_id}.torrent"
-            drive_url = upload_torrent_bytes_directly_to_drive(raw_bytes, clean_name)
+            github_torrent_url = save_torrent_bytes_to_github_vault(raw_bytes, item_id)
             magnet_uri = extract_exact_magnet_from_torrent_bytes(raw_bytes, title)
-            combined = (
-                f"{drive_url}||{magnet_uri}"
-                if (drive_url and magnet_uri)
-                else (drive_url or magnet_uri or f"{page_url}#protected_dl|id={cid}|tabla={tabla}")
-            )
+            combined = f"{github_torrent_url}||{magnet_uri}" if magnet_uri else github_torrent_url
             with INDEX_LOCK:
                 drive_index[item_id] = {
                     "itemId": item_id,
                     "title": title,
-                    "driveUrl": drive_url or "",
+                    "driveUrl": github_torrent_url,
                     "magnet": magnet_uri or "",
                     "updatedAt": int(time.time())
                 }
+            log(f"Guardado en torrents_vault: {item_id}.torrent ({title[:40]})")
             return combined
 
-    return f"{page_url}#protected_dl|id={cid}|tabla={tabla}"
+    # Si no se pudo descargar el .torrent nuevo pero teníamos un magnet previo en el índice, devolverlo
+    with INDEX_LOCK:
+        if item_id in drive_index:
+            mag = drive_index[item_id].get("magnet", "").strip()
+            if mag:
+                return mag
+
+    return None
 
 SPANISH_M3U_SOURCES = [
     "https://iptv-org.github.io/iptv/languages/spa.m3u",
@@ -234,7 +216,8 @@ DONTORRENT_DOMAINS = [
     "https://dontorrent.diy",
     "https://dontorrent.channel",
     "https://dontorrent.li",
-    "https://dontorrent.dad"
+    "https://dontorrent.dad",
+    "https://dontorrent.org"
 ]
 
 def scrape_channels() -> List[dict]:
@@ -244,13 +227,13 @@ def scrape_channels() -> List[dict]:
             r = HTTP_SESSION.get(repo, headers=get_headers(), timeout=15)
             if r.status_code != 200:
                 continue
-            name, group, logo = "", "Canales HD (ES)", ""
+            name, group, logo = "", "Canales HD", ""
             for raw in r.text.splitlines():
                 line = raw.strip()
                 if line.startswith("#EXTINF:"):
                     name = line.rsplit(",", 1)[-1].strip()
                     gm = re.search(r'group-title="([^"]*)"', line, re.I)
-                    group = gm.group(1) if gm and gm.group(1) else "Entretenimiento (ES)"
+                    group = gm.group(1) if gm and gm.group(1) else "Entretenimiento"
                     lm = re.search(r'tvg-logo="([^"]*)"', line, re.I)
                     logo = lm.group(1) if lm else ""
                 elif line.startswith(("http://", "https://")) and name:
@@ -271,13 +254,15 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     with INDEX_LOCK:
         DRIVE_INDEX_FILE.write_text(json.dumps(drive_index, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    lines = [f"HEAD|v17.0-PRIME-CLOUD|{int(time.time())}"]
+    lines = [f"HEAD|v18.0-GITHUB-VAULT|{int(time.time())}"]
     for i, ch in enumerate(channels, start=1):
         lines.append(f"LIVE|live_{i}|{ch['name']}|{ch['category']}|{ch['language']}|1080p HD|{ch['poster']}|Señal en Vivo|{ch['url']}")
     for m in movies_map.values():
         q_json = json.dumps(m["qualities"], ensure_ascii=False).replace("|", "/")
         lines.append(f"MOVIE|{m['id']}|{m['title']}|{m['releaseDate']}|{m['country']}|{m['rating']}|{m['category']}|{m['poster']}|{m['description']}|{q_json}|false|")
     for s in series_map.values():
+        if not s.get("episodes"):
+            continue
         ep_json = json.dumps(s["episodes"], ensure_ascii=False).replace("|", "/")
         lines.append(f"SERIES|{s['id']}|{s['title']}|{s['releaseDate']}|{s['country']}|{s['rating']}|{s['category']}|{s['poster']}|{s['description']}|{ep_json}")
 
@@ -285,6 +270,7 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     CATALOG_TMP_FILE.replace(CATALOG_FILE)
 
 def build_cloud_mdx():
+    log("Iniciando sincronización Modeo+ Cloud 100% en GitHub...")
     drive_index: Dict[str, dict] = {}
     if DRIVE_INDEX_FILE.exists():
         try:
@@ -293,6 +279,7 @@ def build_cloud_mdx():
             drive_index = {}
 
     channels = scrape_channels()
+    log(f"Canales M3U recolectados: {len(channels)}")
     movies_map: Dict[str, dict] = {}
     series_map: Dict[str, dict] = {}
 
@@ -302,18 +289,25 @@ def build_cloud_mdx():
                 p = line.split("|")
                 if p[0] == "MOVIE" and len(p) >= 10:
                     nk = re.sub(r"[^a-z0-9]", "", p[2].lower())
-                    movies_map[nk] = {
-                        "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
-                        "rating": p[5], "category": p[6], "poster": p[7], "description": p[8],
-                        "qualities": json.loads(p[9])
-                    }
+                    quals = json.loads(p[9])
+                    # Filtrar enlaces rotos antiguos con #protected_dl
+                    valid_quals = [q for q in quals if "#protected_dl" not in q.get("torrentUrl", "")]
+                    if valid_quals:
+                        movies_map[nk] = {
+                            "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
+                            "rating": p[5], "category": p[6], "poster": p[7], "description": p[8],
+                            "qualities": valid_quals
+                        }
                 elif p[0] == "SERIES" and len(p) >= 10:
                     nk = re.sub(r"[^a-z0-9]", "", p[2].lower())
-                    series_map[nk] = {
-                        "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
-                        "rating": p[5], "category": p[6], "poster": p[7], "description": p[8],
-                        "episodes": json.loads(p[9])
-                    }
+                    eps = json.loads(p[9])
+                    valid_eps = [e for e in eps if "#protected_dl" not in e.get("torrentUrl", "")]
+                    if valid_eps:
+                        series_map[nk] = {
+                            "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
+                            "rating": p[5], "category": p[6], "poster": p[7], "description": p[8],
+                            "episodes": valid_eps
+                        }
         except Exception:
             pass
 
@@ -324,6 +318,7 @@ def build_cloud_mdx():
             if r.status_code == 200:
                 pu = urlparse(r.url)
                 working_domain = f"{pu.scheme}://{pu.netloc}"
+                log(f"Dominio activo conectado: {working_domain}")
                 break
         except Exception:
             continue
@@ -334,14 +329,14 @@ def build_cloud_mdx():
         for sec in sections:
             page_urls.append(urljoin(working_domain, sec))
             if sec != "/ultimos":
-                for pnum in range(2, 8):
+                for pnum in range(2, 6):
                     page_urls.append(urljoin(working_domain, f"{sec}/page/{pnum}"))
 
         candidates = []
         seen_urls = set()
         for pg_url in page_urls:
             try:
-                resp = HTTP_SESSION.get(pg_url, headers=get_headers(), timeout=12)
+                resp = HTTP_SESSION.get(pg_url, headers=get_headers(), timeout=10)
                 if resp.status_code != 200:
                     continue
                 soup = BeautifulSoup(resp.text, "html.parser")
@@ -360,7 +355,7 @@ def build_cloud_mdx():
                     poster = ""
                     title = a.get_text(" ", strip=True) or slug
                     year_str = "2026"
-                    genre_str = "Películas Prime (ES)" if kind == "pelicula" else "Series Prime (ES)"
+                    genre_str = "Películas Prime" if kind == "pelicula" else "Series Prime"
                     desc_str = f"Streaming Directo P2P • {title}"
                     quality_str = "1080P HD"
 
@@ -385,6 +380,7 @@ def build_cloud_mdx():
             except Exception:
                 continue
 
+        log(f"Candidatos detectados para procesar: {len(candidates)}")
         processed_counter = 0
         for kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u in candidates:
             norm_k = re.sub(r"[^a-z0-9]", "", title.lower())
@@ -395,20 +391,22 @@ def build_cloud_mdx():
             if not is_serie:
                 item_id = f"mov_{hashlib.md5(norm_k.encode()).hexdigest()[:10]}"
                 cloud_url = resolve_cloud_torrent_url(item_id, title, full_u, cid, "peliculas", drive_index)
+                if not cloud_url:
+                    continue
                 movies_map[norm_k] = {
                     "id": item_id,
                     "title": title,
                     "releaseDate": year_str,
                     "country": "ES / LATAM",
-                    "rating": "8.3",
+                    "rating": "8.4",
                     "category": genre_str,
                     "poster": poster,
                     "description": desc_str,
                     "qualities": [{
-                        "quality": f"{quality_str} [Drive Vault]",
+                        "quality": f"{quality_str} [GitHub Vault]",
                         "size": "1.8 GB",
                         "torrentUrl": cloud_url,
-                        "source": "GoogleDriveVault"
+                        "source": "GitHubVault"
                     }]
                 }
             else:
@@ -422,7 +420,7 @@ def build_cloud_mdx():
                         "releaseDate": year_str,
                         "country": "ES / LATAM",
                         "rating": "8.6",
-                        "category": "Series Prime (ES)",
+                        "category": "Series Prime",
                         "poster": poster,
                         "description": desc_str,
                         "episodes": []
@@ -430,6 +428,8 @@ def build_cloud_mdx():
                 ep_num = len(series_map[s_key]["episodes"]) + 1
                 ep_id = f"{s_id}_s1_e{ep_num}"
                 cloud_url = resolve_cloud_torrent_url(ep_id, title, full_u, cid, "series", drive_index)
+                if not cloud_url:
+                    continue
                 if not any(e["episodeId"] == ep_id for e in series_map[s_key]["episodes"]):
                     series_map[s_key]["episodes"].append({
                         "episodeId": ep_id,
@@ -448,6 +448,7 @@ def build_cloud_mdx():
                 save_checkpoint(drive_index, channels, movies_map, series_map)
 
     save_checkpoint(drive_index, channels, movies_map, series_map)
+    log(f"Catálogo finalizado: {len(channels)} canales, {len(movies_map)} películas y {len(series_map)} series.")
 
 if __name__ == "__main__":
     build_cloud_mdx()
