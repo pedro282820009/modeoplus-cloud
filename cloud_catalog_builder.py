@@ -24,7 +24,7 @@ TORRENTS_VAULT_DIR.mkdir(parents=True, exist_ok=True)
 GITHUB_REPO_FULL = os.environ.get("GITHUB_REPO_FULL", "pedro282820009/modeoplus-cloud").strip()
 MAX_PAGES_PER_CATEGORY = int(os.environ.get("MAX_PAGES_PER_CATEGORY", "25"))
 MAX_NEW_POW_PER_RUN = int(os.environ.get("MAX_NEW_POW_PER_RUN", "120"))
-MAX_RUN_SECONDS = int(os.environ.get("MAX_RUN_SECONDS", "360"))  # 6 minutos máximo para garantizar Commit & Push
+MAX_RUN_SECONDS = int(os.environ.get("MAX_RUN_SECONDS", "360"))
 
 SCRIPT_START_TS = time.time()
 INDEX_LOCK = threading.Lock()
@@ -72,10 +72,6 @@ def clean_category_label(cat: str) -> str:
     return re.sub(r"\s*[\(\[]\s*(?:ES|Español|Espanol)\s*[\)\]]", "", cat or "", flags=re.I).strip() or "General"
 
 def create_fast_session() -> requests.Session:
-    """
-    Sesión sin reintentos largos (max_retries=0) para evitar que un bloqueo
-    de IP en dontorrent deje colgado el proceso durante minutos.
-    """
     s = requests.Session()
     adapter = HTTPAdapter(max_retries=0, pool_connections=20, pool_maxsize=20)
     s.mount("http://", adapter)
@@ -146,7 +142,7 @@ def extract_exact_magnet_from_torrent_bytes(raw_bytes: bytes, title: str) -> Opt
 
 def solve_pow_nonce(challenge: str, difficulty_zeros: int = 3) -> int:
     prefix = "0" * difficulty_zeros
-    for nonce in range(1_200_000):
+    for nonce in range(1_800_000):
         if hashlib.sha256(f"{challenge}{nonce}".encode("utf-8")).hexdigest().startswith(prefix):
             return nonce
     return 0
@@ -155,8 +151,7 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
     parsed = urlparse(base_page_url)
     api_pow_url = f"{parsed.scheme}://{parsed.netloc}/api_validate_pow.php"
     try:
-        # Pausa humana de 0.6s a 1.0s para evitar rate-limit del firewall
-        time.sleep(random.uniform(0.60, 1.05))
+        time.sleep(random.uniform(0.55, 0.95))
         for tb in [tabla, "peliculas" if tabla != "peliculas" else "series"]:
             gen = HTTP_SESSION.post(
                 api_pow_url,
@@ -170,7 +165,8 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
             if not gdata.get("success") or not gdata.get("challenge"):
                 continue
 
-            nonce = solve_pow_nonce(gdata["challenge"], 3)
+            diff = int(gdata.get("difficulty", 3))
+            nonce = solve_pow_nonce(gdata["challenge"], diff)
             val = HTTP_SESSION.post(
                 api_pow_url,
                 json={"action": "validate", "challenge": gdata["challenge"], "nonce": nonce},
@@ -198,10 +194,6 @@ def resolve_cloud_torrent_url(
     drive_index: Dict[str, dict],
     allow_live_pow: bool = True
 ) -> Tuple[Optional[str], str]:
-    """
-    Devuelve (descriptor_url, estado):
-    estado = "CACHED" | "POW_OK" | "POW_FAIL" | "SKIPPED_POW"
-    """
     vault_file = TORRENTS_VAULT_DIR / f"{item_id}.torrent"
     expected_github_url = f"https://raw.githubusercontent.com/{GITHUB_REPO_FULL}/main/torrents_vault/{item_id}.torrent"
 
@@ -237,8 +229,6 @@ def resolve_cloud_torrent_url(
             log(f"📦 Nuevo .torrent en bóveda: {item_id}.torrent ({title[:38]})")
             return combined, "POW_OK"
         else:
-            # Si falló el PoW (por rate-limit del servidor), igual guardamos el enlace #protected_dl
-            # para que la TV lo desbloquee en vivo cuando el usuario quiera ver esta película
             return f"{page_url}#protected_dl|id={cid}|tabla={tabla}", "POW_FAIL"
 
     if cid and cid.isdigit() and int(cid) > 0:
@@ -347,7 +337,8 @@ def hydrate_all_cached_index_items(drive_index: Dict[str, dict], movies_map: Dic
         if not stream_desc:
             continue
 
-        norm_k = re.sub(r"[^a-z0-9]", "", title.lower())
+        clean_title_base = re.sub(r"\s*\[.*?\]", "", title).strip() or title
+        norm_k = re.sub(r"[^a-z0-9]", "", clean_title_base.lower())
         if not norm_k:
             continue
 
@@ -356,13 +347,13 @@ def hydrate_all_cached_index_items(drive_index: Dict[str, dict], movies_map: Dic
                 qual_tag = "4K UHD" if "[4k]" in title.lower() or "4k" in title.lower() else "1080P HD"
                 movies_map[norm_k] = {
                     "id": item_id,
-                    "title": re.sub(r"\s*\[.*?\]", "", title).strip() or title,
+                    "title": clean_title_base,
                     "releaseDate": "2025",
                     "country": "ES / LATAM",
                     "rating": "8.4",
                     "category": "Películas",
-                    "poster": "",
-                    "description": f"Película disponible en streaming P2P directo: {title}",
+                    "poster": entry.get("poster", ""),
+                    "description": f"Película disponible en alta definición: {clean_title_base}",
                     "qualities": [{
                         "quality": qual_tag,
                         "size": "1.9 GB",
@@ -383,19 +374,19 @@ def hydrate_all_cached_index_items(drive_index: Dict[str, dict], movies_map: Dic
                     "country": "ES / LATAM",
                     "rating": "8.6",
                     "category": "Series",
-                    "poster": "",
-                    "description": f"Serie completa en streaming P2P directo: {base_serie or title}",
+                    "poster": entry.get("poster", ""),
+                    "description": f"Serie disponible en alta definición: {base_serie or title}",
                     "episodes": []
                 }
             m_se = re.search(r"_s(\d+)_e(\d+)", item_id, re.I)
             s_num = int(m_se.group(1)) if m_se else 1
-            e_num = int(m_se.group(2)) if m_se else (len(series_map[s_key]["episodes"]) + 1)
+            ep_num = int(m_se.group(2)) if m_se else (len(series_map[s_key]["episodes"]) + 1)
             if not any(e["episodeId"] == item_id for e in series_map[s_key]["episodes"]):
                 series_map[s_key]["episodes"].append({
                     "episodeId": item_id,
                     "season": s_num,
-                    "episode": e_num,
-                    "title": f"Episodio {e_num} - {title[:50]}",
+                    "episode": ep_num,
+                    "title": f"Episodio {ep_num} - {title[:50]}",
                     "quality": "1080P HD",
                     "size": "1.3 GB",
                     "torrentUrl": stream_desc,
@@ -410,7 +401,7 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     with INDEX_LOCK:
         DRIVE_INDEX_FILE.write_text(json.dumps(drive_index, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    lines = [f"HEAD|v19.5-GITHUB-FAST|{int(time.time())}"]
+    lines = [f"HEAD|v20.0-GITHUB-CLEAN|{int(time.time())}"]
     for i, ch in enumerate(channels, start=1):
         lines.append(f"LIVE|live_{i}|{ch['name']}|{ch['category']}|{ch['language']}|1080p HD|{ch['poster']}|Señal en Vivo|{ch['url']}")
     for m in movies_map.values():
@@ -518,23 +509,24 @@ def build_cloud_mdx():
         processed_counter = 0
 
         for kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u in candidates:
-            norm_k = re.sub(r"[^a-z0-9]", "", title.lower())
+            clean_title = re.sub(r"\s*\[.*?\]", "", title).strip() or title
+            norm_k = re.sub(r"[^a-z0-9]", "", clean_title.lower())
             if not norm_k:
                 continue
 
-            # Verificar si se agotó el tiempo o si el servidor remoto activó rate-limit (4 fallos seguidos)
             elapsed_total = time.time() - SCRIPT_START_TS
             if not pow_circuit_open and (elapsed_total > MAX_RUN_SECONDS or consecutive_pow_failures >= 4 or new_pow_count >= MAX_NEW_POW_PER_RUN):
                 pow_circuit_open = True
-                log(f"⚡ Cortacircuitos PoW activado (Nuevos .torrent descargados: {new_pow_count} | Fallos seguidos: {consecutive_pow_failures} | Tiempo: {int(elapsed_total)}s). Agregando el resto del catálogo en modo instantáneo #protected_dl...")
+                log(f"⚡ Cortacircuitos PoW activado (Nuevos .torrent: {new_pow_count} | Tiempo: {int(elapsed_total)}s). Completando catálogo...")
 
             allow_pow = not pow_circuit_open
             is_serie = kind in ("serie", "episodio")
 
             if not is_serie:
-                item_id = f"mov_{hashlib.md5(norm_k.encode()).hexdigest()[:10]}"
+                existing_mov = movies_map.get(norm_k)
+                item_id = existing_mov["id"] if existing_mov else f"mov_{hashlib.md5(norm_k.encode()).hexdigest()[:10]}"
                 cloud_url, status = resolve_cloud_torrent_url(
-                    item_id, title, full_u, cid, "peliculas", drive_index, allow_live_pow=allow_pow
+                    item_id, clean_title, full_u, cid, "peliculas", drive_index, allow_live_pow=allow_pow
                 )
                 if status == "POW_OK":
                     new_pow_count += 1
@@ -542,9 +534,15 @@ def build_cloud_mdx():
                 elif status == "POW_FAIL":
                     consecutive_pow_failures += 1
 
-                if not cloud_url:
+                # Si ya teníamos un magnet/torrent válido en caché para esta película, conservarlo y actualizar su portada
+                prev_url = existing_mov["qualities"][0]["torrentUrl"] if (existing_mov and existing_mov.get("qualities")) else ""
+                final_stream_url = prev_url if (prev_url and "#protected_dl" not in prev_url and (not cloud_url or "#protected_dl" in cloud_url)) else cloud_url
+                if not final_stream_url:
                     continue
-                clean_title = re.sub(r"\s*\[.*?\]", "", title).strip() or title
+
+                if poster and item_id in drive_index:
+                    drive_index[item_id]["poster"] = poster
+
                 movies_map[norm_k] = {
                     "id": item_id,
                     "title": clean_title,
@@ -552,23 +550,23 @@ def build_cloud_mdx():
                     "country": "ES / LATAM",
                     "rating": "8.4",
                     "category": clean_category_label(genre_str),
-                    "poster": poster or movies_map.get(norm_k, {}).get("poster", ""),
+                    "poster": poster or (existing_mov.get("poster", "") if existing_mov else ""),
                     "description": desc_str,
                     "qualities": [{
                         "quality": quality_str,
                         "size": "1.9 GB",
-                        "torrentUrl": cloud_url,
+                        "torrentUrl": final_stream_url,
                         "source": "GitHubVault"
                     }]
                 }
             else:
-                base_serie = re.sub(r"\s*[-–]?\s*\d+[ªº]?\s*Temporada.*$", "", title, flags=re.I).strip()
+                base_serie = re.sub(r"\s*[-–]?\s*\d+[ªº]?\s*Temporada.*$", "", clean_title, flags=re.I).strip()
                 s_key = re.sub(r"[^a-z0-9]", "", base_serie.lower()) or norm_k
                 s_id = f"ser_{hashlib.md5(s_key.encode()).hexdigest()[:10]}"
                 if s_key not in series_map:
                     series_map[s_key] = {
                         "id": s_id,
-                        "title": base_serie or title,
+                        "title": base_serie or clean_title,
                         "releaseDate": year_str,
                         "country": "ES / LATAM",
                         "rating": "8.6",
@@ -583,7 +581,7 @@ def build_cloud_mdx():
                 ep_num = len(series_map[s_key]["episodes"]) + 1
                 ep_id = f"{s_id}_s1_e{ep_num}"
                 cloud_url, status = resolve_cloud_torrent_url(
-                    ep_id, title, full_u, cid, "series", drive_index, allow_live_pow=allow_pow
+                    ep_id, clean_title, full_u, cid, "series", drive_index, allow_live_pow=allow_pow
                 )
                 if status == "POW_OK":
                     new_pow_count += 1
@@ -598,7 +596,7 @@ def build_cloud_mdx():
                         "episodeId": ep_id,
                         "season": 1,
                         "episode": ep_num,
-                        "title": f"Episodio {ep_num} - {title[:50]}",
+                        "title": f"Episodio {ep_num} - {clean_title[:50]}",
                         "quality": quality_str,
                         "size": "1.4 GB",
                         "torrentUrl": cloud_url,
@@ -607,7 +605,7 @@ def build_cloud_mdx():
                     })
 
             processed_counter += 1
-            if processed_counter % 15 == 0:
+            if processed_counter % 20 == 0:
                 save_checkpoint(drive_index, channels, movies_map, series_map)
 
     save_checkpoint(drive_index, channels, movies_map, series_map)
