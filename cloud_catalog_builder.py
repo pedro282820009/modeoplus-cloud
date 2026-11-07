@@ -24,7 +24,7 @@ TORRENTS_VAULT_DIR.mkdir(parents=True, exist_ok=True)
 GITHUB_REPO_FULL = os.environ.get("GITHUB_REPO_FULL", "pedro282820009/modeoplus-cloud").strip()
 MAX_PAGES_PER_CATEGORY = int(os.environ.get("MAX_PAGES_PER_CATEGORY", "30"))
 MAX_NEW_POW_PER_RUN = int(os.environ.get("MAX_NEW_POW_PER_RUN", "180"))
-MAX_RUN_SECONDS = int(os.environ.get("MAX_RUN_SECONDS", "420"))  # 7 minutos máximo por corrida
+MAX_RUN_SECONDS = int(os.environ.get("MAX_RUN_SECONDS", "420"))
 
 SCRIPT_START_TS = time.time()
 INDEX_LOCK = threading.Lock()
@@ -144,10 +144,6 @@ def extract_exact_magnet_from_torrent_bytes(raw_bytes: bytes, title: str) -> Opt
     return None
 
 def sync_existing_vault_files_into_index(drive_index: Dict[str, dict]) -> Set[str]:
-    """
-    Escanea todos los archivos .torrent que YA están guardados en torrents_vault/ de GitHub
-    y los registra en memoria para que JAMÁS se vuelvan a descargar en siguientes ejecuciones.
-    """
     existing_vault_ids: Set[str] = set()
     for tf in TORRENTS_VAULT_DIR.glob("*.torrent"):
         try:
@@ -228,16 +224,10 @@ def resolve_cloud_torrent_url(
     existing_vault_ids: Set[str],
     allow_live_pow: bool = True
 ) -> Tuple[Optional[str], str]:
-    """
-    1. Si el .torrent YA existe en torrents_vault/, lo devuelve en 0ms sin hacer peticiones web.
-    2. Si aún NO tiene el archivo físico .torrent en torrents_vault/ y allow_live_pow=True, lo descarga y guarda.
-    3. Si no pudo descargarlo pero tiene magnet en caché, devuelve el magnet.
-    4. Nunca devuelve enlaces #protected_dl sin resolver para evitar 'Contenido no encontrado' en la TV.
-    """
     vault_file = TORRENTS_VAULT_DIR / f"{item_id}.torrent"
     expected_github_url = get_github_raw_torrent_url(item_id)
 
-    # PASO 1: ¿Ya existe el archivo físico .torrent en GitHub? -> Saltar inmediatamente
+    # Usamos "@@" como separador seguro entre la URL del .torrent y el magnet: para no colisionar nunca con "|" del archivo MDX
     if item_id in existing_vault_ids or (vault_file.exists() and vault_file.stat().st_size > 40):
         existing_vault_ids.add(item_id)
         with INDEX_LOCK:
@@ -256,16 +246,15 @@ def resolve_cloud_torrent_url(
                 "poster": saved.get("poster", ""),
                 "updatedAt": saved.get("updatedAt", int(time.time()))
             }
-        return (f"{expected_github_url}||{mag}" if mag else expected_github_url), "CACHED_VAULT"
+        return (f"{expected_github_url}@@{mag}" if mag else expected_github_url), "CACHED_VAULT"
 
-    # PASO 2: No está en torrents_vault/. Si allow_live_pow está activo, descargarlo ahora
     if allow_live_pow and cid and cid.isdigit() and int(cid) > 0:
         raw_bytes = fetch_torrent_bytes_in_ram(page_url, cid, tabla)
         if raw_bytes:
             github_torrent_url = save_torrent_bytes_to_github_vault(raw_bytes, item_id)
             existing_vault_ids.add(item_id)
             magnet_uri = extract_exact_magnet_from_torrent_bytes(raw_bytes, title) or ""
-            combined = f"{github_torrent_url}||{magnet_uri}" if magnet_uri else github_torrent_url
+            combined = f"{github_torrent_url}@@{magnet_uri}" if magnet_uri else github_torrent_url
             with INDEX_LOCK:
                 prev_poster = drive_index.get(item_id, {}).get("poster", "")
                 drive_index[item_id] = {
@@ -279,7 +268,6 @@ def resolve_cloud_torrent_url(
             log(f"📦 Nuevo .torrent sincronizado: {item_id}.torrent ({title[:38]})")
             return combined, "POW_OK"
         else:
-            # Si falló el PoW pero este item ya tenía un magnet válido en drive_torrents_index.json, usar el magnet
             with INDEX_LOCK:
                 saved = drive_index.get(item_id, {})
                 mag = (saved.get("magnet") or "").strip()
@@ -287,14 +275,13 @@ def resolve_cloud_torrent_url(
                     return mag, "POW_FAIL_USED_MAGNET"
             return None, "POW_FAIL"
 
-    # PASO 3: Si el cortacircuitos está abierto, solo devolver si ya tiene magnet o .torrent verificado
     with INDEX_LOCK:
         if item_id in drive_index:
             saved = drive_index[item_id]
             d_url = (saved.get("driveUrl") or "").strip()
             mag = (saved.get("magnet") or "").strip()
             if d_url and mag:
-                return f"{d_url}||{mag}", "CACHED_INDEX"
+                return f"{d_url}@@{mag}", "CACHED_INDEX"
             if mag.startswith("magnet:"):
                 return mag, "CACHED_INDEX"
             if d_url.startswith("http"):
@@ -399,7 +386,7 @@ def hydrate_all_cached_index_items(drive_index: Dict[str, dict], movies_map: Dic
             d_url = get_github_raw_torrent_url(item_id)
             entry["driveUrl"] = d_url
 
-        stream_desc = f"{d_url}||{mag}" if (d_url and mag) else (d_url or mag)
+        stream_desc = f"{d_url}@@{mag}" if (d_url and mag) else (d_url or mag)
         if not stream_desc or "#protected_dl" in stream_desc:
             continue
 
@@ -467,7 +454,6 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     with INDEX_LOCK:
         DRIVE_INDEX_FILE.write_text(json.dumps(drive_index, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # Ordenar poniendo primero las películas y series que ya tienen archivo .torrent en torrents_vault/ y portada
     sorted_movies = sorted(
         movies_map.values(),
         key=lambda m: (
@@ -477,10 +463,14 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
         )
     )
 
-    lines = [f"HEAD|v21.0-GITHUB-INCREMENTAL|{int(time.time())}"]
+    lines = [f"HEAD|v22.0-GITHUB-SAFE-SEP|{int(time.time())}"]
     for i, ch in enumerate(channels, start=1):
         lines.append(f"LIVE|live_{i}|{ch['name']}|{ch['category']}|{ch['language']}|1080p HD|{ch['poster']}|Señal en Vivo|{ch['url']}")
     for m in sorted_movies:
+        # Limpiar cualquier '//magnet:' o '||' residual hacia el separador seguro '@@'
+        for q in m.get("qualities", []):
+            t_u = q.get("torrentUrl", "")
+            q["torrentUrl"] = t_u.replace("//magnet:", "@@magnet:").replace("||", "@@")
         q_json = json.dumps(m["qualities"], ensure_ascii=False).replace("|", "/")
         clean_t = m["title"].replace("|", " ").replace("\n", " ").strip()
         clean_d = m["description"].replace("|", " ").replace("\n", " ").strip()[:260]
@@ -489,6 +479,9 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
         if not s.get("episodes"):
             continue
         s["episodes"] = sorted(s["episodes"], key=lambda x: (int(x.get("season", 1)), int(x.get("episode", 1))))
+        for ep in s["episodes"]:
+            t_u = ep.get("torrentUrl", "")
+            ep["torrentUrl"] = t_u.replace("//magnet:", "@@magnet:").replace("||", "@@")
         ep_json = json.dumps(s["episodes"], ensure_ascii=False).replace("|", "/")
         clean_t = s["title"].replace("|", " ").replace("\n", " ").strip()
         clean_d = s["description"].replace("|", " ").replace("\n", " ").strip()[:260]
@@ -506,7 +499,6 @@ def build_cloud_mdx():
         except Exception:
             drive_index = {}
 
-    # 1. Escanear torrents_vault/ para saber qué archivos .torrent ya están en GitHub y no repetirlos jamás
     existing_vault_ids = sync_existing_vault_files_into_index(drive_index)
 
     channels = scrape_channels()
@@ -514,14 +506,18 @@ def build_cloud_mdx():
     movies_map: Dict[str, dict] = {}
     series_map: Dict[str, dict] = {}
 
-    # 2. Cargar del MDX previo únicamente los títulos que ya tienen enlace verificado (descartando #protected_dl antiguos)
     if CATALOG_FILE.exists():
         try:
             for line in CATALOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
                 p = line.split("|")
                 if p[0] == "MOVIE" and len(p) >= 10:
                     nk = re.sub(r"[^a-z0-9]", "", p[2].lower())
-                    quals = [q for q in json.loads(p[9]) if "#protected_dl" not in q.get("torrentUrl", "")]
+                    quals = []
+                    for q in json.loads(p[9]):
+                        tu = q.get("torrentUrl", "").replace("//magnet:", "@@magnet:").replace("||", "@@")
+                        if "#protected_dl" not in tu and tu:
+                            q["torrentUrl"] = tu
+                            quals.append(q)
                     if quals:
                         movies_map[nk] = {
                             "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
@@ -530,7 +526,12 @@ def build_cloud_mdx():
                         }
                 elif p[0] == "SERIES" and len(p) >= 10:
                     nk = re.sub(r"[^a-z0-9]", "", p[2].lower())
-                    eps = [e for e in json.loads(p[9]) if "#protected_dl" not in e.get("torrentUrl", "")]
+                    eps = []
+                    for e in json.loads(p[9]):
+                        tu = e.get("torrentUrl", "").replace("//magnet:", "@@magnet:").replace("||", "@@")
+                        if "#protected_dl" not in tu and tu:
+                            e["torrentUrl"] = tu
+                            eps.append(e)
                     if eps:
                         series_map[nk] = {
                             "id": p[1], "title": p[2], "releaseDate": p[3], "country": p[4],
@@ -581,7 +582,6 @@ def build_cloud_mdx():
                         seen_urls.add(full_u)
                         candidates.append(item_tuple)
 
-        # Paso A: Actualizar primero las portadas de todos los títulos que ya estaban en caché sin gastar tiempo en PoW
         posters_matched = 0
         for kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u in candidates:
             if not poster:
@@ -601,7 +601,6 @@ def build_cloud_mdx():
         if posters_matched > 0:
             log(f"🖼️ Portadas asignadas a títulos existentes: {posters_matched}")
 
-        # Paso B: Filtrar y ordenar candidatos para procesar PRIMERO los que NO están todavía en torrents_vault/
         log(f"🎬 Candidatos web: {len(candidates)}. Sincronizando únicamente los que faltan en torrents_vault/...")
         new_pow_count = 0
         skipped_existing_count = 0
@@ -618,7 +617,7 @@ def build_cloud_mdx():
             elapsed_total = time.time() - SCRIPT_START_TS
             if not pow_circuit_open and (elapsed_total > MAX_RUN_SECONDS or consecutive_pow_failures >= 5 or new_pow_count >= MAX_NEW_POW_PER_RUN):
                 pow_circuit_open = True
-                log(f"⚡ Límite de lote alcanzado (Nuevos .torrent guardados hoy: {new_pow_count} | Ya existentes saltados: {skipped_existing_count}). Guardando avance en GitHub...")
+                log(f"⚡ Límite de lote alcanzado (Nuevos .torrent hoy: {new_pow_count} | Ya existentes saltados: {skipped_existing_count}). Guardando avance en GitHub...")
 
             allow_pow = not pow_circuit_open
             is_serie = kind in ("serie", "episodio")
@@ -715,7 +714,7 @@ def build_cloud_mdx():
                 save_checkpoint(drive_index, channels, movies_map, series_map)
 
     save_checkpoint(drive_index, channels, movies_map, series_map)
-    log(f"✅ SINCRONIZACIÓN INCREMENTAL COMPLETADA: {len( existing_vault_ids )} archivos .torrent en bóveda | {len(channels)} canales | {len(movies_map)} películas | {len(series_map)} series listas.")
+    log(f"✅ SINCRONIZACIÓN INCREMENTAL COMPLETADA: {len(existing_vault_ids)} archivos .torrent en bóveda | {len(channels)} canales | {len(movies_map)} películas | {len(series_map)} series listas.")
 
 if __name__ == "__main__":
     build_cloud_mdx()
