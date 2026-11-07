@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from bs4 import BeautifulSoup
-from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -23,15 +22,17 @@ TORRENTS_VAULT_DIR = BASE_DIR / "torrents_vault"
 TORRENTS_VAULT_DIR.mkdir(parents=True, exist_ok=True)
 
 GITHUB_REPO_FULL = os.environ.get("GITHUB_REPO_FULL", "pedro282820009/modeoplus-cloud").strip()
-MAX_PAGES_PER_CATEGORY = int(os.environ.get("MAX_PAGES_PER_CATEGORY", "35"))
-MAX_NEW_POW_PER_RUN = int(os.environ.get("MAX_NEW_POW_PER_RUN", "450"))
+MAX_PAGES_PER_CATEGORY = int(os.environ.get("MAX_PAGES_PER_CATEGORY", "25"))
+MAX_NEW_POW_PER_RUN = int(os.environ.get("MAX_NEW_POW_PER_RUN", "120"))
+MAX_RUN_SECONDS = int(os.environ.get("MAX_RUN_SECONDS", "360"))  # 6 minutos máximo para garantizar Commit & Push
 
+SCRIPT_START_TS = time.time()
 INDEX_LOCK = threading.Lock()
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15"
 ]
 
 PUBLIC_FAST_TRACKERS = [
@@ -70,21 +71,25 @@ def log(msg: str):
 def clean_category_label(cat: str) -> str:
     return re.sub(r"\s*[\(\[]\s*(?:ES|Español|Espanol)\s*[\)\]]", "", cat or "", flags=re.I).strip() or "General"
 
-def create_resilient_session() -> requests.Session:
+def create_fast_session() -> requests.Session:
+    """
+    Sesión sin reintentos largos (max_retries=0) para evitar que un bloqueo
+    de IP en dontorrent deje colgado el proceso durante minutos.
+    """
     s = requests.Session()
-    retries = Retry(total=3, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504], raise_on_status=False)
-    adapter = HTTPAdapter(max_retries=retries, pool_connections=24, pool_maxsize=24)
+    adapter = HTTPAdapter(max_retries=0, pool_connections=20, pool_maxsize=20)
     s.mount("http://", adapter)
     s.mount("https://", adapter)
     return s
 
-HTTP_SESSION = create_resilient_session()
+HTTP_SESSION = create_fast_session()
 
 def get_headers(referer: Optional[str] = None, is_json: bool = False) -> dict:
     h = {
         "User-Agent": random.choice(USER_AGENTS),
         "Accept": "*/*" if is_json else "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "es-ES,es;q=0.9"
+        "Accept-Language": "es-ES,es;q=0.9",
+        "Connection": "keep-alive"
     }
     if referer:
         h["Referer"] = referer
@@ -141,7 +146,7 @@ def extract_exact_magnet_from_torrent_bytes(raw_bytes: bytes, title: str) -> Opt
 
 def solve_pow_nonce(challenge: str, difficulty_zeros: int = 3) -> int:
     prefix = "0" * difficulty_zeros
-    for nonce in range(3_500_000):
+    for nonce in range(1_200_000):
         if hashlib.sha256(f"{challenge}{nonce}".encode("utf-8")).hexdigest().startswith(prefix):
             return nonce
     return 0
@@ -150,32 +155,34 @@ def fetch_torrent_bytes_in_ram(base_page_url: str, content_id: str, tabla: str) 
     parsed = urlparse(base_page_url)
     api_pow_url = f"{parsed.scheme}://{parsed.netloc}/api_validate_pow.php"
     try:
-        HTTP_SESSION.get(base_page_url, headers=get_headers(), timeout=7)
-        for tb in [tabla, "peliculas", "series", "episodios", "documentales"]:
+        # Pausa humana de 0.6s a 1.0s para evitar rate-limit del firewall
+        time.sleep(random.uniform(0.60, 1.05))
+        for tb in [tabla, "peliculas" if tabla != "peliculas" else "series"]:
             gen = HTTP_SESSION.post(
                 api_pow_url,
                 json={"action": "generate", "content_id": int(content_id), "tabla": tb},
                 headers=get_headers(referer=base_page_url, is_json=True),
-                timeout=7
+                timeout=(4, 5)
             )
             if gen.status_code != 200:
                 continue
             gdata = gen.json()
             if not gdata.get("success") or not gdata.get("challenge"):
                 continue
+
             nonce = solve_pow_nonce(gdata["challenge"], 3)
             val = HTTP_SESSION.post(
                 api_pow_url,
                 json={"action": "validate", "challenge": gdata["challenge"], "nonce": nonce},
                 headers=get_headers(referer=base_page_url, is_json=True),
-                timeout=7
+                timeout=(4, 5)
             )
             if val.status_code != 200:
                 continue
             dl_uri = val.json().get("download_url")
             if dl_uri:
                 full_t_url = ("https:" + dl_uri) if dl_uri.startswith("//") else urljoin(base_page_url, dl_uri)
-                tr = HTTP_SESSION.get(full_t_url, headers=get_headers(referer=base_page_url), timeout=10)
+                tr = HTTP_SESSION.get(full_t_url, headers=get_headers(referer=base_page_url), timeout=(4, 6))
                 if tr.status_code == 200 and len(tr.content) > 50 and tr.content[0:1] == b"d":
                     return tr.content
     except Exception:
@@ -190,10 +197,10 @@ def resolve_cloud_torrent_url(
     tabla: str,
     drive_index: Dict[str, dict],
     allow_live_pow: bool = True
-) -> Tuple[Optional[str], bool]:
+) -> Tuple[Optional[str], str]:
     """
-    Devuelve (descriptor_url, hizo_pow_nuevo).
-    Prioriza torrents_vault/ y drive_torrents_index.json para procesar miles de títulos en segundos.
+    Devuelve (descriptor_url, estado):
+    estado = "CACHED" | "POW_OK" | "POW_FAIL" | "SKIPPED_POW"
     """
     vault_file = TORRENTS_VAULT_DIR / f"{item_id}.torrent"
     expected_github_url = f"https://raw.githubusercontent.com/{GITHUB_REPO_FULL}/main/torrents_vault/{item_id}.torrent"
@@ -207,11 +214,11 @@ def resolve_cloud_torrent_url(
                 d_url = expected_github_url
                 saved["driveUrl"] = d_url
             if d_url and mag:
-                return f"{d_url}||{mag}", False
+                return f"{d_url}||{mag}", "CACHED"
             if mag:
-                return mag, False
+                return mag, "CACHED"
             if d_url:
-                return d_url, False
+                return d_url, "CACHED"
 
     if allow_live_pow and cid and cid.isdigit() and int(cid) > 0:
         raw_bytes = fetch_torrent_bytes_in_ram(page_url, cid, tabla)
@@ -228,20 +235,22 @@ def resolve_cloud_torrent_url(
                     "updatedAt": int(time.time())
                 }
             log(f"📦 Nuevo .torrent en bóveda: {item_id}.torrent ({title[:38]})")
-            return combined, True
+            return combined, "POW_OK"
+        else:
+            # Si falló el PoW (por rate-limit del servidor), igual guardamos el enlace #protected_dl
+            # para que la TV lo desbloquee en vivo cuando el usuario quiera ver esta película
+            return f"{page_url}#protected_dl|id={cid}|tabla={tabla}", "POW_FAIL"
 
-    # Si no se pudo resolver el PoW en esta pasada pero tiene content_id, guardar token #protected_dl
-    # (La app de Android TV ahora sabe desbloquear #protected_dl en vivo al darle a Ver Ahora)
     if cid and cid.isdigit() and int(cid) > 0:
-        return f"{page_url}#protected_dl|id={cid}|tabla={tabla}", False
+        return f"{page_url}#protected_dl|id={cid}|tabla={tabla}", "SKIPPED_POW"
 
-    return None, False
+    return None, "SKIPPED_POW"
 
 def scrape_channels() -> List[dict]:
     channels_by_url: Dict[str, dict] = {}
     for repo in SPANISH_M3U_SOURCES:
         try:
-            r = HTTP_SESSION.get(repo, headers=get_headers(), timeout=15)
+            r = HTTP_SESSION.get(repo, headers=get_headers(), timeout=(5, 10))
             if r.status_code != 200:
                 continue
             name, group, logo = "", "Canales HD", ""
@@ -271,7 +280,7 @@ def fetch_catalog_page_worker(args: Tuple[str, str]) -> List[tuple]:
     working_domain, pg_url = args
     found = []
     try:
-        resp = HTTP_SESSION.get(pg_url, headers=get_headers(working_domain), timeout=10)
+        resp = HTTP_SESSION.get(pg_url, headers=get_headers(working_domain), timeout=(4, 6))
         if resp.status_code != 200:
             return found
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -322,10 +331,6 @@ def fetch_catalog_page_worker(args: Tuple[str, str]) -> List[tuple]:
     return found
 
 def hydrate_all_cached_index_items(drive_index: Dict[str, dict], movies_map: Dict[str, dict], series_map: Dict[str, dict]):
-    """
-    Convierte automáticamente todos los 1,800+ enlaces guardados en drive_torrents_index.json
-    en entradas activas del catálogo MDX para que nunca se pierda ningún título previo.
-    """
     added_from_index = 0
     for item_id, entry in drive_index.items():
         title = (entry.get("title") or "").strip()
@@ -405,7 +410,7 @@ def save_checkpoint(drive_index: Dict[str, dict], channels: List[dict], movies_m
     with INDEX_LOCK:
         DRIVE_INDEX_FILE.write_text(json.dumps(drive_index, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    lines = [f"HEAD|v19.0-GITHUB-FULL|{int(time.time())}"]
+    lines = [f"HEAD|v19.5-GITHUB-FAST|{int(time.time())}"]
     for i, ch in enumerate(channels, start=1):
         lines.append(f"LIVE|live_{i}|{ch['name']}|{ch['category']}|{ch['language']}|1080p HD|{ch['poster']}|Señal en Vivo|{ch['url']}")
     for m in movies_map.values():
@@ -440,7 +445,6 @@ def build_cloud_mdx():
     movies_map: Dict[str, dict] = {}
     series_map: Dict[str, dict] = {}
 
-    # 1. Cargar catálogo MDX existente si lo hay
     if CATALOG_FILE.exists():
         try:
             for line in CATALOG_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -466,14 +470,13 @@ def build_cloud_mdx():
         except Exception:
             pass
 
-    # 2. Hidratar inmediatamente todos los 1,800+ torrents que ya tienes en drive_torrents_index.json
     hydrate_all_cached_index_items(drive_index, movies_map, series_map)
+    save_checkpoint(drive_index, channels, movies_map, series_map)
 
-    # 3. Buscar dominio activo y barrer páginas (1 a 35) + Abecedario (A-Z) en paralelo
     working_domain = None
     for d in DONTORRENT_DOMAINS:
         try:
-            r = HTTP_SESSION.get(d, headers=get_headers(), timeout=8)
+            r = HTTP_SESSION.get(d, headers=get_headers(), timeout=(4, 6))
             if r.status_code == 200:
                 pu = urlparse(r.url)
                 working_domain = f"{pu.scheme}://{pu.netloc}"
@@ -495,11 +498,11 @@ def build_cloud_mdx():
             page_urls.append(urljoin(working_domain, f"/peliculas/letra-{letter.lower()}"))
             page_urls.append(urljoin(working_domain, f"/series/letra-{letter.lower()}"))
 
-        log(f"🔎 Escaneando {len(page_urls)} páginas de listado y abecedario A-Z con 12 hilos en paralelo...")
+        log(f"🔎 Escaneando {len(page_urls)} páginas de listado y abecedario A-Z en paralelo...")
         candidates = []
         seen_urls = set()
 
-        with ThreadPoolExecutor(max_workers=12) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(fetch_catalog_page_worker, (working_domain, u)) for u in page_urls]
             for future in as_completed(futures):
                 for item_tuple in future.result():
@@ -508,24 +511,37 @@ def build_cloud_mdx():
                         seen_urls.add(full_u)
                         candidates.append(item_tuple)
 
-        log(f"🎬 Total de candidatos únicos encontrados en la web: {len(candidates)}")
+        log(f"🎬 Candidatos únicos descubiertos: {len(candidates)}. Procesando fichas...")
         new_pow_count = 0
+        consecutive_pow_failures = 0
+        pow_circuit_open = False
         processed_counter = 0
 
         for kind, cid, title, poster, year_str, genre_str, desc_str, quality_str, full_u in candidates:
             norm_k = re.sub(r"[^a-z0-9]", "", title.lower())
             if not norm_k:
                 continue
+
+            # Verificar si se agotó el tiempo o si el servidor remoto activó rate-limit (4 fallos seguidos)
+            elapsed_total = time.time() - SCRIPT_START_TS
+            if not pow_circuit_open and (elapsed_total > MAX_RUN_SECONDS or consecutive_pow_failures >= 4 or new_pow_count >= MAX_NEW_POW_PER_RUN):
+                pow_circuit_open = True
+                log(f"⚡ Cortacircuitos PoW activado (Nuevos .torrent descargados: {new_pow_count} | Fallos seguidos: {consecutive_pow_failures} | Tiempo: {int(elapsed_total)}s). Agregando el resto del catálogo en modo instantáneo #protected_dl...")
+
+            allow_pow = not pow_circuit_open
             is_serie = kind in ("serie", "episodio")
-            allow_pow = (new_pow_count < MAX_NEW_POW_PER_RUN)
 
             if not is_serie:
                 item_id = f"mov_{hashlib.md5(norm_k.encode()).hexdigest()[:10]}"
-                cloud_url, did_pow = resolve_cloud_torrent_url(
+                cloud_url, status = resolve_cloud_torrent_url(
                     item_id, title, full_u, cid, "peliculas", drive_index, allow_live_pow=allow_pow
                 )
-                if did_pow:
+                if status == "POW_OK":
                     new_pow_count += 1
+                    consecutive_pow_failures = 0
+                elif status == "POW_FAIL":
+                    consecutive_pow_failures += 1
+
                 if not cloud_url:
                     continue
                 clean_title = re.sub(r"\s*\[.*?\]", "", title).strip() or title
@@ -566,19 +582,23 @@ def build_cloud_mdx():
 
                 ep_num = len(series_map[s_key]["episodes"]) + 1
                 ep_id = f"{s_id}_s1_e{ep_num}"
-                cloud_url, did_pow = resolve_cloud_torrent_url(
+                cloud_url, status = resolve_cloud_torrent_url(
                     ep_id, title, full_u, cid, "series", drive_index, allow_live_pow=allow_pow
                 )
-                if did_pow:
+                if status == "POW_OK":
                     new_pow_count += 1
+                    consecutive_pow_failures = 0
+                elif status == "POW_FAIL":
+                    consecutive_pow_failures += 1
+
                 if not cloud_url:
                     continue
                 if not any(e["episodeId"] == ep_id for e in series_map[s_key]["episodes"]):
                     series_map[s_key]["episodes"].append({
                         "episodeId": ep_id,
                         "season": 1,
-                        "episode": ep_num,
-                        "title": f"Episodio {ep_num} - {title[:50]}",
+                        "episode": e_num,
+                        "title": f"Episodio {e_num} - {title[:50]}",
                         "quality": quality_str,
                         "size": "1.4 GB",
                         "torrentUrl": cloud_url,
@@ -587,11 +607,11 @@ def build_cloud_mdx():
                     })
 
             processed_counter += 1
-            if processed_counter % 50 == 0:
+            if processed_counter % 15 == 0:
                 save_checkpoint(drive_index, channels, movies_map, series_map)
 
     save_checkpoint(drive_index, channels, movies_map, series_map)
-    log(f"✅ CATÁLOGO FINALIZADO: {len(channels)} canales, {len(movies_map)} películas y {len(series_map)} series escritas en modeoplus_catalog.mdx.")
+    log(f"✅ CATÁLOGO FINALIZADO CON ÉXITO: {len(channels)} canales, {len(movies_map)} películas y {len(series_map)} series escritas en modeoplus_catalog.mdx.")
 
 if __name__ == "__main__":
     build_cloud_mdx()
