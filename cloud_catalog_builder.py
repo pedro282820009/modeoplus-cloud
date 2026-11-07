@@ -597,8 +597,8 @@ def build_cloud_mdx():
                     series_map[s_key]["episodes"].append({
                         "episodeId": ep_id,
                         "season": 1,
-                        "episode": e_num,
-                        "title": f"Episodio {e_num} - {title[:50]}",
+                        "episode": ep_num,
+                        "title": f"Episodio {ep_num} - {title[:50]}",
                         "quality": quality_str,
                         "size": "1.4 GB",
                         "torrentUrl": cloud_url,
