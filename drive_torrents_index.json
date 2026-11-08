@@ -1951,7 +1951,7 @@
     "title": "Zona cero",
     "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_fb6b8c8a28.torrent",
     "magnet": "magnet:?xt=urn:btih:0bb67a9dbc0a3f6c1d0c41f7939936b74292743b&dn=Zona%20cero&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
-    "poster": "",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Zona-cero-[Ninguno]-[DonTorrent]-[1Ruo].webp",
     "updatedAt": 1794055293
   },
   "mov_17a53b9671": {
@@ -2615,7 +2615,7 @@
     "title": "The Rooster",
     "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_051c1db652.torrent",
     "magnet": "magnet:?xt=urn:btih:ac2d32da3aa743d8702790326f0d727bd7db164f&dn=The%20Rooster&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
-    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/The-Rooster-[DVDRip]-[DonTorrent]-[MDN1].jpg",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/The-Rooster-[DVDRip]-[DonTorrent]-[8TOq].jpg",
     "updatedAt": 1794099118
   },
   "mov_7dd7dfb2ec": {
@@ -3121,5 +3121,245 @@
     "magnet": "magnet:?xt=urn:btih:023014a250a9b0700e432c79d837fa28b327e279&dn=Un%20lugar%20llamado%20silencio&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
     "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Un-lugar-llamado-silencio-[DVDRip]-[DonTorrent]-[LN1I].webp",
     "updatedAt": 1794141714
+  },
+  "mov_468f31f08d": {
+    "itemId": "mov_468f31f08d",
+    "title": "Midas Man",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_468f31f08d.torrent",
+    "magnet": "magnet:?xt=urn:btih:c1f890e5c346959b66780752f458f62b6af303c6&dn=Midas%20Man&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Midas-Man-[DVDRip]-[DonTorrent]-[vbBG].webp",
+    "updatedAt": 1794162982
+  },
+  "mov_a3069260de": {
+    "itemId": "mov_a3069260de",
+    "title": "En mar abierto",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_a3069260de.torrent",
+    "magnet": "magnet:?xt=urn:btih:b84075197648e0ad692ca8cdd928a7decd98c108&dn=En%20mar%20abierto&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/En-mar-abierto-[DVDRip]-[DonTorrent]-[0geZ].webp",
+    "updatedAt": 1794162984
+  },
+  "mov_fea087517c": {
+    "itemId": "mov_fea087517c",
+    "title": "Normal",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_fea087517c.torrent",
+    "magnet": "magnet:?xt=urn:btih:53187b5b855f3025b185e800404759356283399d&dn=Normal&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Normal-[DVDRip]-[DonTorrent]-[4tcD].webp",
+    "updatedAt": 1794162986
+  },
+  "mov_b8483c838a": {
+    "itemId": "mov_b8483c838a",
+    "title": "Las catadoras del Hitler",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_b8483c838a.torrent",
+    "magnet": "magnet:?xt=urn:btih:41944d5f3a6783a6020f2db18253473132453b1c&dn=Las%20catadoras%20del%20Hitler&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Las-catadoras-del-Hitler-[BluRay-1080p]-[DonTorrent]-[wQUJ].webp",
+    "updatedAt": 1794162988
+  },
+  "mov_24dabec39a": {
+    "itemId": "mov_24dabec39a",
+    "title": "Strung",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_24dabec39a.torrent",
+    "magnet": "magnet:?xt=urn:btih:71b1e155efc70c4d2743e155c6c61a37f2dea99a&dn=Strung&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Strung-[BluRay-1080p]-[DonTorrent]-[rVD1].webp",
+    "updatedAt": 1794162989
+  },
+  "mov_4e4089253b": {
+    "itemId": "mov_4e4089253b",
+    "title": "Puo de len",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_4e4089253b.torrent",
+    "magnet": "magnet:?xt=urn:btih:ba99a1a79753659cd5a20760781b4c2b9172e0b9&dn=Puo%20de%20len&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Puo-de-len-[BluRay-1080p]-[DonTorrent]-[wBF6].webp",
+    "updatedAt": 1794162991
+  },
+  "mov_bd39be72b5": {
+    "itemId": "mov_bd39be72b5",
+    "title": "Unabomber",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_bd39be72b5.torrent",
+    "magnet": "magnet:?xt=urn:btih:5dcf0521ce78074051001cdeb1732657997cd17a&dn=Unabomber&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Unabomber-[DVDRip]-[DonTorrent]-[9EgG].webp",
+    "updatedAt": 1794162993
+  },
+  "mov_ddc150fce5": {
+    "itemId": "mov_ddc150fce5",
+    "title": "Nirvanna the Band the Show the Movie",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_ddc150fce5.torrent",
+    "magnet": "magnet:?xt=urn:btih:bfea751160006d4ea980ab7271754dd8f5926e0f&dn=Nirvanna%20the%20Band%20the%20Show%20the%20Movie&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Nirvanna-the-Band-the-Show-the-Movie-[BluRay-1080p]-[DonTorrent]-[GZw6].webp",
+    "updatedAt": 1794162995
+  },
+  "mov_57924cee14": {
+    "itemId": "mov_57924cee14",
+    "title": "Letras robadas",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_57924cee14.torrent",
+    "magnet": "magnet:?xt=urn:btih:1b756246d9a6f160be740ba2dadc78f4524f9ab9&dn=Letras%20robadas&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Letras-robadas-[BluRay-1080p]-[DonTorrent]-[LyCE].webp",
+    "updatedAt": 1794162996
+  },
+  "mov_24d79bc14f": {
+    "itemId": "mov_24d79bc14f",
+    "title": "La muerte de Robin Hood",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_24d79bc14f.torrent",
+    "magnet": "magnet:?xt=urn:btih:b20c80df933d1414119b4cfcc49a788b4bc953b5&dn=La%20muerte%20de%20Robin%20Hood&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/La-muerte-de-Robin-Hood-[BluRay-1080p]-[DonTorrent]-[rlGT].webp",
+    "updatedAt": 1794162998
+  },
+  "mov_6a65f9b310": {
+    "itemId": "mov_6a65f9b310",
+    "title": "La bestia en la jungla",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_6a65f9b310.torrent",
+    "magnet": "magnet:?xt=urn:btih:696ae93eb886add116849bdbe0e5d16396d63705&dn=La%20bestia%20en%20la%20jungla&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/La-bestia-en-la-jungla-[BluRay-1080p]-[DonTorrent]-[Sj9p].webp",
+    "updatedAt": 1794163000
+  },
+  "mov_50a015b8d5": {
+    "itemId": "mov_50a015b8d5",
+    "title": "Soulm8te",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_50a015b8d5.torrent",
+    "magnet": "magnet:?xt=urn:btih:493faf367606b8fdd8de0f5e5a37cb1b6ebbea42&dn=Soulm8te&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Soulm8te-[BluRay-1080p]-[DonTorrent]-[iTpw].webp",
+    "updatedAt": 1794163001
+  },
+  "mov_f8ec3173d6": {
+    "itemId": "mov_f8ec3173d6",
+    "title": "Un mundo frgil y maravilloso",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_f8ec3173d6.torrent",
+    "magnet": "magnet:?xt=urn:btih:21ebb96146e38da474e71a70bbc46db7e11269a0&dn=Un%20mundo%20frgil%20y%20maravilloso&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Un-mundo-frgil-y-maravilloso-[BluRay-1080p]-[DonTorrent]-[1FuL].webp",
+    "updatedAt": 1794163003
+  },
+  "mov_1aceaaa37f": {
+    "itemId": "mov_1aceaaa37f",
+    "title": "Mallorca confidencial",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_1aceaaa37f.torrent",
+    "magnet": "magnet:?xt=urn:btih:04b94302ae2d4d8524ebc9c0c3f716b52d161ac0&dn=Mallorca%20confidencial&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Mallorca-confidencial-[DVDRip]-[DonTorrent]-[hEYw].webp",
+    "updatedAt": 1794163005
+  },
+  "mov_96d40e5648": {
+    "itemId": "mov_96d40e5648",
+    "title": "Mononoke III La maldicin de la serpiente",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_96d40e5648.torrent",
+    "magnet": "magnet:?xt=urn:btih:8f477bf453b1a24e85573f9c0e14bb3026f9e055&dn=Mononoke%20III%20La%20maldicin%20de%20la%20serpiente&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Mononoke-III-La-maldicin-de-la-serpiente-[DVDRip]-[DonTorrent]-[OidD].webp",
+    "updatedAt": 1794163007
+  },
+  "mov_14bcd32e3f": {
+    "itemId": "mov_14bcd32e3f",
+    "title": "Amo del universo",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_14bcd32e3f.torrent",
+    "magnet": "magnet:?xt=urn:btih:4d2b5c62738620064ce23b064a72eaf474c1f425&dn=Amo%20del%20universo&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Amo-del-universo-[BluRay-1080p]-[DonTorrent]-[vhic].jpg",
+    "updatedAt": 1794163009
+  },
+  "mov_ec00f63f31": {
+    "itemId": "mov_ec00f63f31",
+    "title": "Supergirl",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_ec00f63f31.torrent",
+    "magnet": "magnet:?xt=urn:btih:aebf66e2232d6e1de6d645c502818e882b912f11&dn=Supergirl&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Supergirl-[BluRay-1080p]-[DonTorrent]-[FHTc].jpg",
+    "updatedAt": 1794163011
+  },
+  "mov_3d88b125b0": {
+    "itemId": "mov_3d88b125b0",
+    "title": "La ambicin de los Savage",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_3d88b125b0.torrent",
+    "magnet": "magnet:?xt=urn:btih:19218510effc6cb0199a2eb8bd6d58c7bcbca409&dn=La%20ambicin%20de%20los%20Savage&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/La-ambicin-de-los-Savage-[DVDRip]-[DonTorrent]-[ZGIl].jpg",
+    "updatedAt": 1794163012
+  },
+  "mov_e91ca08aaf": {
+    "itemId": "mov_e91ca08aaf",
+    "title": "Nunca cambies",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_e91ca08aaf.torrent",
+    "magnet": "magnet:?xt=urn:btih:647e2071beb8b58733b2609cd0de4df66711c403&dn=Nunca%20cambies&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Nunca-cambies-[DVDRip]-[DonTorrent]-[Zjth].jpg",
+    "updatedAt": 1794163014
+  },
+  "mov_2dec7b9d26": {
+    "itemId": "mov_2dec7b9d26",
+    "title": "N121 ltima parada",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_2dec7b9d26.torrent",
+    "magnet": "magnet:?xt=urn:btih:a9724c4a187b1e9702456174620ae46336a059de&dn=N121%20ltima%20parada&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/N121-ltima-parada-[DVDRip]-[DonTorrent]-[T3qo].jpg",
+    "updatedAt": 1794163016
+  },
+  "mov_51e66ec20b": {
+    "itemId": "mov_51e66ec20b",
+    "title": "Caso 137",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_51e66ec20b.torrent",
+    "magnet": "magnet:?xt=urn:btih:5943dddd2bd3a4a39f39e7e4c26a81aa554565e3&dn=Caso%20137&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Caso-137-[BluRay-1080p]-[DonTorrent]-[kl05].jpg",
+    "updatedAt": 1794163018
+  },
+  "mov_0bac0d77ed": {
+    "itemId": "mov_0bac0d77ed",
+    "title": "As lleg la noche",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_0bac0d77ed.torrent",
+    "magnet": "magnet:?xt=urn:btih:49f04ce72fcce9675367f682177445a1295f98bb&dn=As%20lleg%20la%20noche&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/As-lleg-la-noche-[DVDRip]-[DonTorrent]-[C03t].jpg",
+    "updatedAt": 1794163020
+  },
+  "mov_34a3e31233": {
+    "itemId": "mov_34a3e31233",
+    "title": "72 horas",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_34a3e31233.torrent",
+    "magnet": "magnet:?xt=urn:btih:22c59bff0f30466e1fd76621905673f93a3bcf6c&dn=72%20horas&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/72-horas-[DVDRip]-[DonTorrent]-[tQPf].jpg",
+    "updatedAt": 1794163021
+  },
+  "mov_8c8a277af5": {
+    "itemId": "mov_8c8a277af5",
+    "title": "Dink",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_8c8a277af5.torrent",
+    "magnet": "magnet:?xt=urn:btih:287cc1942caf9152d46568660b54e4cb68dfdae4&dn=Dink&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Dink-[BluRay-1080p]-[DonTorrent]-[rlOx].jpg",
+    "updatedAt": 1794163023
+  },
+  "mov_10553c7a5d": {
+    "itemId": "mov_10553c7a5d",
+    "title": "La ahorcada",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_10553c7a5d.torrent",
+    "magnet": "magnet:?xt=urn:btih:aa75a72d426777d87c62553cc74fbb166d1ca5f0&dn=La%20ahorcada&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/La-ahorcada-[DVDRip]-[DonTorrent]-[2m7O].jpg",
+    "updatedAt": 1794163025
+  },
+  "mov_2427aaec40": {
+    "itemId": "mov_2427aaec40",
+    "title": "El drama",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_2427aaec40.torrent",
+    "magnet": "magnet:?xt=urn:btih:386daec3ecfeca78d5ca961309cd5f6ded909f03&dn=El%20drama&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/El-drama-[DVDRip]-[DonTorrent]-[KxTh].jpg",
+    "updatedAt": 1794163027
+  },
+  "mov_603101e382": {
+    "itemId": "mov_603101e382",
+    "title": "Los creyentes",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_603101e382.torrent",
+    "magnet": "magnet:?xt=urn:btih:658b1f335d90c75cce4c747a1f9a51dcd2e8924c&dn=Los%20creyentes&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Los-creyentes-[DVDRip]-[DonTorrent]-[ErLK].jpg",
+    "updatedAt": 1794163028
+  },
+  "mov_e7a3c28482": {
+    "itemId": "mov_e7a3c28482",
+    "title": "Elize Sombras de una mujer",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_e7a3c28482.torrent",
+    "magnet": "magnet:?xt=urn:btih:5d13bd3994c3b7d4383b6c1a35fece3e80712efe&dn=Elize%20Sombras%20de%20una%20mujer&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Elize-Sombras-de-una-mujer-[DVDRip]-[DonTorrent]-[BoyE].jpg",
+    "updatedAt": 1794163030
+  },
+  "mov_354f754c7d": {
+    "itemId": "mov_354f754c7d",
+    "title": "He Man y los masters del universo",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_354f754c7d.torrent",
+    "magnet": "magnet:?xt=urn:btih:1c418621dd91f321eb8d4939c359ff69703b25b0&dn=He%20Man%20y%20los%20masters%20del%20universo&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/He-Man-y-los-masters-del-universo-[BluRay-1080p]-[DonTorrent]-[Cpe6].jpg",
+    "updatedAt": 1794163032
+  },
+  "mov_8977e425a5": {
+    "itemId": "mov_8977e425a5",
+    "title": "Turno de noche",
+    "driveUrl": "https://raw.githubusercontent.com/pedro282820009/modeoplus-cloud/main/torrents_vault/mov_8977e425a5.torrent",
+    "magnet": "magnet:?xt=urn:btih:680f22f0a7475d713ea8f625f0da6cf1ef60510b&dn=Turno%20de%20noche&tr=udp%3A//tracker.opentrackr.org%3A1337/announce&tr=udp%3A//open.stealth.si%3A80/announce&tr=udp%3A//tracker.torrent.eu.org%3A451/announce&tr=udp%3A//exodus.desync.com%3A6969/announce&tr=udp%3A//tracker.openbittorrent.com%3A6969/announce&tr=http%3A//tracker.opentrackr.org%3A1337/announce",
+    "poster": "https://images.weserv.nl/?output=webp&w=120&h=165&url=doncdn.com/imagenes/peliculas/Turno-de-noche-[BluRay-1080p]-[DonTorrent]-[Jh1G].jpg",
+    "updatedAt": 1794163034
   }
 }
